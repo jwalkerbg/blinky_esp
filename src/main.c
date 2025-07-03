@@ -24,6 +24,13 @@ LOG_MODULE_REGISTER(blinky, LOG_LEVEL_INF); // Set the module name and log level
 
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), led_gpios);
 
+static struct k_timer led_timer;
+
+void led_timer_handler(struct k_timer *dummy)
+{
+    gpio_pin_toggle_dt(&led);
+}
+
 int main(void)
 {
 	int ret;
@@ -31,19 +38,9 @@ int main(void)
 
     gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
 
+    // Initialize and start a periodic timer
+    k_timer_init(&led_timer, led_timer_handler, NULL);
+    k_timer_start(&led_timer, K_MSEC(1000), K_MSEC(1000));
 
-	while (1) {
-		ret = gpio_pin_set_dt(&led,led_state);
-		if (ret < 0)
-        {
-			return 0;
-		}
-
-		led_state = !led_state;
-        LOG_INF("LED toggled");
-
-		//printf("LED state: %s\n", led_state ? "ON" : "OFF");
-		k_msleep(SLEEP_TIME_MS);
-	}
 	return 0;
 }
